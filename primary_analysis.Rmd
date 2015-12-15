@@ -202,6 +202,7 @@ consumption_figure %>%
 
 aov.out.consumption <- aov(Consumption ~ SEA + stress + SEA*stress*Sex*day + Error(cage_id/day), data = consumption)
 summary(aov.out.consumption)
+#ANOVA of Consumpton regressed on SEA (0 or 1), stress(0 or 1) and the 4 way interaction of SEA by Stress by sex by day.  This is essentially trying to look at how the SEA+stress group does over time, and whether or not there is a differential effect due to sex. (4 way interactions are a little nasty!)
 
 ```
 
@@ -209,15 +210,18 @@ What the above analysis means:
 There is a significant stress by day interaction, meaning that stressed animals over time are changing their consumption.  Based on the graph, we can tell that their consumption is decreasing.
 
 -----
+-----
 
 Overall change in body weight over the stress protocol:
 
 ```{r echo = FALSE}
 animal_weight_outlier %>%
   ggplot(aes(x = day, y = weight, colour = treatment)) + geom_point(position = "jitter", alpha = 0.4, size = 2.5) + stat_smooth(method = "lm", size = 2, alpha = 0.4) + ggtitle("Fig.3a - Change in body weight over stress protocol") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") 
+#draws figure for animal weight over the stress protocol timeframe.  Data shown as individual data points with linear best fit by treatment + 95% confidence intervals.
 
 animal_weight_outlier %>%
   ggplot(aes(x = day, y = weight, colour = treatment)) + geom_point(position = "jitter", alpha = 0.4, size = 2.5) + stat_smooth(method = "lm", size = 2, alpha = 0.4) + ggtitle("Fig. 3b - Change in body weight over stress protocol\nfaceted by sex") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + facet_grid(. ~ Sex)
+#draws figure for animal weight over the stress protocol timeframe.  Data shown as individual data points with linear best fit by treatment + 95% confidence intervals. This figure is the same as above, except it is faceted by sex, so that males and females are visualized seperately.
 
 aov.out.weight <- aov(weight ~ SEA + stress + Sex + Sex + SEA*stress*day + Error(animal_id/day), data = animal_weight_outlier)
 summary(aov.out.weight)

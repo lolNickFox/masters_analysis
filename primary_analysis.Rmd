@@ -223,16 +223,14 @@ animal_weight_outlier %>%
   ggplot(aes(x = day, y = weight, colour = treatment)) + geom_point(position = "jitter", alpha = 0.4, size = 2.5) + stat_smooth(method = "lm", size = 2, alpha = 0.4) + ggtitle("Fig. 3b - Change in body weight over stress protocol\nfaceted by sex") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + facet_grid(. ~ Sex)
 #draws figure for animal weight over the stress protocol timeframe.  Data shown as individual data points with linear best fit by treatment + 95% confidence intervals. This figure is the same as above, except it is faceted by sex, so that males and females are visualized seperately.
 
-aov.out.weight <- aov(weight ~ SEA + stress + Sex + Sex + SEA*stress*day + Error(animal_id/day), data = animal_weight_outlier)
+aov.out.weight <- aov(weight ~ SEA + stress + Sex + SEA*stress*day*Sex + Error(animal_id/day), data = animal_weight_outlier)
 summary(aov.out.weight)
-
-#summary(lme(weight ~ SEA + stress + Sex + SEA*stress*day, data = animal_weight_outlier, random = ~ 1 | treatment))
+#repeated measures ANOVA for animal weight regressed on SEA (0 or 1), stress (0 or 1), and the 4 way interaction between SEA, stress, day, and sex.  This is to see if the SEA+stress animals are changing compared to the individual insults, and if that there is a differencial due to sex (4 way interactions are scary)
 
 ```
 
 What the above output means:
 The treatment by day interaction means that different treatment groups gain weight at different rates over time, but over our 15 days, this did not change the animal weights enough to significantly separate groups by day 15.
-
 
 -----
 -----

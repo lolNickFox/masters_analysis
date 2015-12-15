@@ -1,0 +1,691 @@
+---
+title: "Two-hit Summer 2015: Data analysis"
+author: "Nick Fox"
+date: "Saturday, August 15, 2015"
+output: html_document
+---
+
+```{r echo = FALSE}
+options(warn = -1)
+#install.packages("car")
+#install.packages("dplyr")
+#install.packages("ggplot2")
+#install.packages("compute.es")
+#install.packages("effects")
+#install.packages("multcomp")
+#install.packages("pastecs")
+#install.packages("beeswarm")
+#install.packages("MASS")
+#install.packages("QuantPsyc")
+#install.packages("nlme")
+#install.packages("lme4")
+
+library(dplyr)
+library(ggplot2)
+library(car)
+library(compute.es)
+library(effects)
+library(multcomp)
+library(pastecs)
+library(beeswarm)
+library(MASS)
+library(QuantPsyc)
+library(nlme)
+library(lme4)
+
+Sem <- function(x) {
+  sqrt(var(x)/length(x))
+  }
+
+```
+
+```{r echo = FALSE}
+
+#FOR WINDOWS, use the WD below:
+#setwd("C:/Users/Nick/Dropbox/Kusnecov Lab/Nick/data/two hit data - summer 2015/TO ANALYZE")
+
+#FOR MAC, use the WD below:
+setwd("~/Dropbox/Kusnecov Lab/Nick/data/two hit data - summer 2015/TO ANALYZE")
+
+animal_weight_outlier <- read.csv("two_hit_stress_weights_outlier.csv", header = TRUE)
+#load in data, both animal info and animal weight over stress protocol
+
+consumption <- read.csv("consumption.csv", header = TRUE, na.strings = c("", "NA"))
+#load in consumption data
+
+consumption <- consumption %>% 
+  na.omit()
+
+consumption$Consumption <- as.numeric(as.character(consumption$Consumption))
+
+consumption$Treatment <- factor(consumption$Treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+
+animal_weight_outlier$treatment <- factor(animal_weight_outlier$treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+
+
+
+animal_weight_outlier_male <- animal_weight_outlier %>%
+  filter(Sex == "m") 
+#males only
+
+animal_weight_outlier_female <- animal_weight_outlier %>%
+  filter(Sex == "f")
+#females only
+
+animal_weight_outlier_male14 <- animal_weight_outlier %>%
+  filter(Sex == "m") %>%
+  filter(day == 14)
+#males on day 15 only
+
+animal_weight_outlier_female14 <- animal_weight_outlier %>%
+  filter(Sex == "f") %>%
+  filter(day == 14)
+#females on day 15 only
+
+AW_14_outlier <- animal_weight_outlier %>%
+  filter(day == 14)
+
+AW_14_outlier$treatment <- factor(AW_14_outlier$treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+
+```
+
+-----
+
+Let's look at body weight before starting the stress protocol.
+
+```{r echo = FALSE}
+
+AW_0 <- animal_weight_outlier %>%
+  filter(day == 0) %>%
+  group_by(treatment) %>%
+  mutate(Sem_weight = Sem(weight))
+
+AW_0_average_weight_distinct <- AW_0 %>%
+  group_by(treatment, Sex) %>%
+  mutate(average_weight = mean(weight), Sem_weight = Sem(weight)) %>%
+  distinct(treatment, Sex)
+
+AW_0 %>%
+  ggplot(aes(x = treatment, y = weight, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + ggtitle("Fig. 1 - Body weight on day 0 of stress protocol") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_grid(. ~ Sex)
+
+
+AW_0_average_weight_distinct %>%
+  ggplot(aes(x = treatment, y = average_weight, fill = treatment)) + geom_bar(stat = "identity") + geom_errorbar(aes(ymin = average_weight - Sem_weight, ymax = average_weight + Sem_weight), width = 0.2) + ggtitle("Fig. 1 - Animal weight on Day 0 of stress protocol") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_fill_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_grid(. ~ Sex)
+```
+
+```{r echo = FALSE}
+
+lm1 <- lm(weight ~ treatment + Sex, data = AW_0)
+summary(lm1)
+anova(lm1)
+```
+
+What the above analysis means:
+Male animals weigh significantly more than females on day 0 of the stress protocol, but maternal SEA treatment has not affected weight.
+
+-----
+
+Now let's look at day 15, after the stressor.
+
+```{r echo = FALSE}
+
+AW_14_average_weight_distinct <- AW_14_outlier %>%
+  group_by(treatment, Sex) %>%
+  mutate(average_weight = mean(weight), Sem_weight = Sem(weight)) %>%
+  distinct(treatment, Sex)
+
+AW_14_outlier %>%
+  ggplot(aes(x = treatment, y = weight, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + ggtitle("Fig. 2 - Body weight on day 15 of stress protocol") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_grid(. ~ Sex)
+
+AW_14_average_weight_distinct %>%
+  ggplot(aes(x = treatment, y = average_weight, fill = treatment)) + geom_bar(stat = "identity") + geom_errorbar(aes(ymin = average_weight - Sem_weight, ymax = average_weight + Sem_weight), width = 0.2) + ggtitle("Fig. 2 - Body weight on day 15 of stress protocol") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_fill_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_grid(. ~ Sex)
+```
+
+```{r echo = FALSE}
+
+lm2 <- lm(weight ~ SEA + stress + Sex + SEA*stress, data = AW_14_outlier)
+summary(lm2)
+anova(lm2)
+
+with(AW_14_outlier, pairwise.t.test(weight, treatment, p.adjust.method = "bonferroni", paired = F))
+```
+
+What the above analysis means:
+Male animals are heavier than female animals on after the stress protocol.  Maternal SEA treatment has not affected weight.
+
+
+-----
+
+Now let's look at food consumption:
+
+```{r echo = FALSE}
+
+consumption_figure <- consumption %>%
+  group_by(Treatment, day) %>%
+  mutate(average_consumption = mean(Consumption), Sem_consumption = Sem(Consumption)) %>%
+  distinct(day)
+
+
+consumption %>%
+  ggplot(aes(x = day, y = Consumption, colour = Treatment)) + geom_point(position = "jitter", alpha = 0.6, size = 2.5) + stat_smooth(method = "lm", size = 2, alpha = 0.4) + ggtitle("Fig. 4 - Food consumption per animal") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + scale_y_continuous(limits = c(2.5, 8)) + facet_grid(. ~ Sex)
+
+consumption_figure %>%
+  ggplot(aes(x = day, y = average_consumption, colour = Treatment)) + geom_line(size = 2.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + scale_y_continuous(limits = c(2.5, 6)) + ylab("grams eaten per animal per cage")
+
+
+```
+
+```{r echo = FALSE}
+
+aov.out.consumption <- aov(Consumption ~ SEA + stress + SEA*stress*Sex*day + Error(cage_id/day), data = consumption)
+summary(aov.out.consumption)
+
+```
+
+What the above analysis means:
+There is a significant stress by day interaction, meaning that stressed animals over time are changing their consumption.  Based on the graph, we can tell that their consumption is decreasing.
+
+-----
+
+Overall change in body weight over the stress protocol:
+
+```{r echo = FALSE}
+animal_weight_outlier %>%
+  ggplot(aes(x = day, y = weight, colour = treatment)) + geom_point(position = "jitter", alpha = 0.4, size = 2.5) + stat_smooth(method = "lm", size = 2, alpha = 0.4) + ggtitle("Fig.3a - Change in body weight over stress protocol") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") 
+
+animal_weight_outlier %>%
+  ggplot(aes(x = day, y = weight, colour = treatment)) + geom_point(position = "jitter", alpha = 0.4, size = 2.5) + stat_smooth(method = "lm", size = 2, alpha = 0.4) + ggtitle("Fig. 3b - Change in body weight over stress protocol\nfaceted by sex") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + facet_grid(. ~ Sex)
+
+aov.out.weight <- aov(weight ~ SEA + stress + Sex + Sex + SEA*stress*day + Error(animal_id/day), data = animal_weight_outlier)
+summary(aov.out.weight)
+
+#summary(lme(weight ~ SEA + stress + Sex + SEA*stress*day, data = animal_weight_outlier, random = ~ 1 | treatment))
+
+```
+
+What the above output means:
+The treatment by day interaction means that different treatment groups gain weight at different rates over time, but over our 15 days, this did not change the animal weights enough to significantly separate groups by day 15.
+
+
+-----
+-----
+
+wRAM data:
+
+```{r echo = FALSE}
+
+wram <- read.csv("wram_raw.csv", header = TRUE)
+#reads in the wram raw data
+
+wram$treatment <- factor(wram$treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+
+wram_hidden_NA <- wram %>%
+  filter(flag_training == "no") %>%
+  filter(!is.na(duration))
+
+wram_hidden_NA$duration[wram_hidden_NA$duration >= 58.0] <- NA
+#give NA to any duration 58 seconds or longer
+
+wram_hidden <- wram %>%
+  filter(flag_training == "no")
+
+wram_hidden_treatment_average2 <- wram %>%
+  group_by(treatment, day) %>%
+  filter(flag_training == "no", duration < 58.0) %>%
+  mutate(treatment_average_duration = mean(duration), rm.na = TRUE) %>%
+  distinct("day")
+
+wram_hidden_found <- wram_hidden_NA %>%
+  filter(duration < 58.0)
+
+wram_hidden_trial_average <- wram_hidden_NA %>%
+  group_by(treatment, day) %>%
+  mutate(mean.duration = mean(duration)) %>%
+  distinct(day) %>%
+  filter(!is.na(mean.duration))
+
+
+wram_hidden_not_found <- wram_hidden %>%
+  filter(duration >= 58.0) %>%
+  group_by(animal_id)
+```
+
+```{r echo = FALSE}
+
+wram_hidden %>%
+  ggplot(aes(x = day, y = duration, colour = treatment)) + geom_point(position = "jitter", alpha = 0.4, size = 2.5) + stat_smooth(method = "lm", size = 2, alpha = 0.4) + ggtitle("Fig. 5 - Duration of wRAM test") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + ylab("duration of time spent in maze (seconds)")
+
+wram_hidden_treatment_average2 %>%
+  ggplot(aes(x = day, y = treatment_average_duration, colour = treatment)) + geom_line(size = 2.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + ylab("duration of time spent in maze (seconds)")
+  
+
+
+
+
+
+aov.out.length <- aov(duration ~ treatment * sex * day + Error(animal_id/day), data = wram_hidden)
+summary(aov.out.length)
+
+with(wram_hidden, pairwise.t.test(duration, treatment, p.adjust.method = "bonferroni", paired = F))
+```
+
+What the above output means:
+SEA-no stress animals had the highest average length of wRAM test.  This may be due to many animals failing to find the platform and maxing out at 60 seconds.
+
+
+```{r echo = FALSE}
+wram_hidden_found %>%
+  ggplot(aes(x = day, y = duration, colour = treatment)) + geom_point(position = "jitter", alpha = 0.4, size = 2.5) + stat_smooth(method = "lm", size = 2, alpha = 0.4) + ggtitle("Fig. 6 - Duration to find hidden platform\nomitting failed trials") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") 
+#duration graph
+
+aov.out.duration <- aov(duration ~ treatment * sex * day + Error(animal_id/day), data = wram_hidden_found)
+summary(aov.out.duration)
+
+with(wram_hidden_found, pairwise.t.test(duration, treatment, p.adjust.method = "bonferroni", paired = F))
+```
+
+What the above output means:
+Omitting those animals that failed to find the platform (and maxed out at 60 seconds), SEA-no stress animals that find the platform take longer to find it than saline-no stress and saline-stress groups.
+
+-----
+-----
+
+wRAM fail error calculations:
+
+```{r echo = FALSE}
+
+wram_hidden_errors <- wram_hidden %>%
+  group_by(animal_id) %>%
+  mutate(sum_error = sum(error)) %>%
+  distinct(animal_id)
+
+wram_hidden_errors_outlier <- wram_hidden %>%
+  group_by(animal_id) %>%
+  mutate(sum_error = sum(error)) %>%
+  filter(sum_error < 10) %>%
+  distinct(animal_id)
+
+wram_hidden_errors$treatment <- factor(wram_hidden_errors$treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+
+```
+
+The distribution of errors in the wRAM is not normally distributed.  Will need to use a poisson glm.
+
+
+```{r echo = FALSE}
+
+wram_hidden_errors %>%
+  ggplot(aes(x = treatment, y = sum_error, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + ggtitle("Fig. 7 - Total number of fail errors made\nin the wRAM per animal") + theme(axis.text.x = element_text(angle = 45, hjust = 1))                                                                                                                                                                                                                                                                                                                                                                         
+
+glm1 <- glm(sum_error ~ SEA + stress + sex + SEA*stress, data = wram_hidden_errors, family = "poisson")
+summary(glm1)
+
+```
+
+What the above output means:
+animals whose mothers were treated with SEA during pregnancy made more errors in the wRAM.  They had more trials where they failed to find the hidden platform.
+
+```{r echo = FALSE}
+
+wram_hidden_errors_outlier %>%
+  ggplot(aes(x = treatment, y = sum_error, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + ggtitle("Fig. X - Total number of\nfail errors made in the wRAM - without possible outlier") + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+glm1a <- glm(sum_error ~ SEA + stress + sex + SEA*stress, data = wram_hidden_errors_outlier, family = "poisson")
+summary(glm1a)
+```
+
+What is above:
+Extra figure and analysis that excludes possible outlier point in the SEA-no stress group.  We see our main effect of SEA still exists when the outlier is removed.
+
+
+
+
+```{r echo = FALSE}
+wram_error_day <- wram_hidden %>%
+  group_by(treatment, day) %>%
+  mutate(sum_error = sum(error)) %>%
+  mutate(average_sum_error = mean(sum_error)) %>%
+  distinct(day)
+
+wram_error_day %>%
+  ggplot(aes(x = day, y = average_sum_error, colour = treatment)) + geom_line(size = 2.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + ylab("Number of errors made")
+
+aov.out.errors <- aov(sum_error ~ SEA + stress + sex + day + SEA*stress*day + Error(animal_id/day), data = wram_error_day)
+summary(aov.out.errors)
+
+```
+
+-----
+-----
+
+wRAM distance
+
+```{r echo = FALSE}
+
+wram_hidden %>%
+  group_by(treatment, day, sex) %>%
+  mutate(mean.distance = mean(distance)) %>%
+  distinct(day, sex) %>%
+  filter(!is.na(mean.distance)) %>%
+  ggplot(aes(x = day, y = mean.distance, colour = treatment)) + geom_line(size = 2.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + ylab("Distance traveled (meters)") + facet_grid(. ~ sex)
+
+aov.out.distance <- aov(distance ~ treatment * sex * day + Error(animal_id/day), data = wram_hidden)
+summary(aov.out.distance)
+
+with(wram_hidden_found, pairwise.t.test(distance, treatment, p.adjust.method = "bonferroni", paired = F))
+
+wram_hidden %>%
+  ggplot(aes(x = day, y = distance, colour = treatment)) + geom_point(position = "jitter", alpha = 0.4, size = 2.5) + stat_smooth(method = "lm", size = 2, alpha = 0.15, SE = FALSE) + ggtitle("Fig. X - Distance to find hidden platform\nfaceted by sex") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + facet_grid(. ~ sex)
+
+
+
+```
+
+What the above output means:
+SEA-no stress animals travel further before finding the hidden platform compared to saline-no stress animals.  There is no treatment by day interaction, which means SEA-no stress is always worse.
+There is a sex by day interaction, which is driven by the female SEA-no stress animals.  They start off travelling the furthest distance and decrease at the fastest rate over time.
+Male SEA-no stress animals decrease their distance travelled at a similar rate to the other groups, but are consistantly worse.
+
+
+```{r echo = FALSE}
+
+wram_hidden %>%
+  group_by(treatment, day) %>%
+  mutate(mean.speed = mean(speed)) %>%
+  distinct(day) %>%
+  filter(!is.na(mean.speed)) %>%
+  ggplot(aes(x = day, y = mean.speed, colour = treatment)) + geom_line(size = 2.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + ylab("Speed (meters / second)") + scale_y_continuous(limits = c(0, 0.2))
+
+aov.out.speed <- aov(speed ~ treatment * sex * day + Error(animal_id/day), data = wram_hidden)
+summary(aov.out.speed)
+
+```
+
+
+What the above output means:
+Speed does not change over time.  Speed is also not different between treatment groups.
+
+
+-----
+-----
+
+Below is wram probe data:
+
+```{r echo = FALSE}
+
+wram_probe <- read.csv("wram_probe.csv", header = TRUE)
+
+wram_rotated_probe <- wram_probe %>%
+  filter(probe_type == "rotated")
+
+wram_24hr_probe <- wram_probe %>%
+  filter(probe_type == "24hr") %>%
+  filter(!is.na(time_to_enter_target))
+
+wram_24hr_probe$treatment <- factor(wram_24hr_probe$treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+
+
+wram_24hr_probe %>%
+  ggplot(aes(x = treatment, y = time_target_arm, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 11 - Time spent in platform arm\n24 hour probe test") + scale_colour_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+aov.out.timeprobe <- aov(time_target_arm ~ treatment + Sex, data = wram_24hr_probe)
+summary(aov.out.timeprobe)
+#anova for time spent in the target arm
+
+TukeyHSD(aov.out.timeprobe)
+
+```
+
+What the above analysis means:
+There is a significant effect of treatment on total time spent in the target arm.
+Tukey post-test shows a significant difference between saline-no stress and SEA-stress.
+
+
+```{r echo = FALSE}
+
+wram_24hr_probe %>%
+  ggplot(aes(x = treatment, y = time_to_enter_target, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 12 - Time to first entry to platform arm\n 24 hour probe test") + scale_colour_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+glm3 <- glm(time_to_enter_target ~ SEA + stress + Sex + SEA*stress, data = wram_24hr_probe, family = "poisson")
+summary(glm3)
+#Poisson GLM for latency to enter the target arm.  The distribution is non-normal.
+```
+
+What the above analysis means:
+There is a significant effect of the interaction between SEA treatment and stress treatment.
+There is a marginally significant effect of sex (being male, specifically)
+There may be a possible interaction with sex?
+
+```{r echo = FALSE}
+wram_24hr_probe %>%
+  ggplot(aes(x = treatment, y = time_to_enter_target, colour = treatment)) + geom_point(position = "jitter", size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 12 - Time to first entry to platform arm\n 24 hour probe test") + scale_colour_brewer(palette = "Set1") + facet_grid(. ~ Sex) + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+glm4 <- glm(time_to_enter_target ~ SEA + stress + Sex*SEA*stress, data = wram_24hr_probe, family = "poisson")
+summary(glm4)
+```
+
+What the above analysis means:
+The suspected sex interaction exists.  The interaction between SEA and stress on the time to enter the target arm is only in males, and not in females.
+Overall, males and females do not have different latencies to enter the target arm.
+
+
+-----
+
+
+EPM data:
+
+```{r echo = FALSE}
+
+EPM <- read.csv("EPM_OF_raw.csv", header = TRUE)
+EPM$treatment <- factor(EPM$treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+
+
+EPM %>%
+  ggplot(aes(x = treatment, y = EPM_dist, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 13 - Distance travelled in EPM") + scale_colour_brewer(palette = "Set1")
+#graph of number of open arm entries total
+
+lm4 <- lm(EPM_dist ~ SEA + stress + Sex + SEA*stress, data = EPM)
+summary(lm4)
+anova(lm4)
+
+```
+
+What the above output means:
+Stress treatment increased distance travelled in the elevated plus maze, but not maternal SEA treatment.
+
+
+
+```{r echo = FALSE}
+
+EPM %>%
+  ggplot(aes(x = treatment, y = EPM_open_entries, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 14 - Number of open arm entries by treatment") + scale_colour_brewer(palette = "Set1")
+
+
+lm5 <- lm(EPM_open_entries ~ SEA + stress + Sex + SEA*stress, data = EPM)
+summary(lm5)
+anova(lm5)
+
+```
+
+What the analysis above means:
+There is a main effect of both SEA and stress - both increase the number of open arm entries in the EPM.
+
+
+
+```{r echo = FALSE}
+
+EPM %>%
+  ggplot(aes(x = treatment, y = EPM_open_time, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 15 - total time spent in the open arms") + scale_colour_brewer(palette = "Set1")
+
+lm6 <- lm(EPM_open_time ~ SEA + stress + Sex + SEA*stress, data = EPM)
+summary(lm6)
+
+```
+
+What the analysis above means:
+Neither SEA or stress significantly changes the time spent in the open arms.
+
+-----
+
+Now let's look at the open field data:
+
+```{r echo = FALSE}
+
+open_field <- read.csv("openfield_raw.csv", header = TRUE)
+open_field$treatment <- factor(open_field$treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+
+open_field_no_object <- open_field %>%
+  filter(object_trial == "no_object")
+
+open_field_object <- open_field %>%
+  filter(object_trial == "object")
+
+open_field_no_object <- open_field %>%
+  filter(object_trial == "no_object")
+
+open_field_no_object %>%
+  ggplot(aes(x = treatment, y = distance, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 14 - total time spent in\nthe open section of the open field\n(no object)") + scale_colour_brewer(palette = "Set1")
+
+lm7 <- lm(distance ~ SEA + stress, data = open_field_no_object)
+summary(lm7)
+anova(lm7)
+
+open_field_object %>%
+  ggplot(aes(x = treatment, y = distance, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 14 - total time spent in\nthe open section of the open field\n(no object)") + scale_colour_brewer(palette = "Set1")
+
+lm7a <- lm(distance ~ SEA + stress, data = open_field_object)
+summary(lm7a)
+anova(lm7a)
+
+```
+
+What the above analysis means:
+offspring from SEA-exposed mothers spent more time in the walled portion of the open field when a novel object was present.
+
+```{r echo = FALSE}
+
+open_field_object %>%
+  ggplot(aes(x = treatment, y = center_time, colour = treatment)) + geom_point(position = "jitter", size = 3) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 18 - Time spent in the center zone (with object)") + scale_colour_brewer(palette = "Set1")
+
+open_field_no_object %>%
+  ggplot(aes(x = treatment, y = center_time, colour = treatment))  + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 15 - Total distance traveled in open field\n (no object)") + scale_colour_brewer(palette = "Set1")
+
+
+lm8 <- lm(center_time ~ SEA + stress, data = open_field_object)
+summary(lm8)
+anova(lm8)
+
+
+open_field %>%
+  ggplot(aes(x = object_trial, y = center_time, fill = treatment))  + geom_bar(stat = "identity", position = "dodge") + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 15 - Total distance traveled in open field\n (no object)") + scale_fill_brewer(palette = "Set1")
+
+aov.out.bars <- aov(center_time ~ object_trial + Error(animal_id/object_trial), data = open_field)
+summary(aov.out.bars)
+
+
+```
+
+What the above analysis means:
+offspring from SEA-exposed mothers were on average further from the novel object than non SEA-exposed offspring.
+
+-----
+
+PPI DATA!
+
+
+```{r echo = FALSE}
+
+PPI <- read.csv("PPI_raw.csv", header = TRUE)
+PPI$treatment <- factor(PPI$treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+PPI$Prepulse_intensity <- factor(PPI$Prepulse_intensity, levels = c("PPI_380", "PPI_425", "PPI_510"))
+
+PPI %>%
+  ggplot(aes(x = Prepulse_intensity, y = percent_PPI, colour = treatment)) + geom_point(position = "jitter", alpha = 0.4, size = 2.5) + stat_smooth(method = "loess", size = 2, alpha = 0.15, se = FALSE, aes(group = treatment)) + ggtitle("Fig. 20 - Prepulse inhibition over three prepulse intensities ") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1")
+
+aov.out.PPI <- aov(percent_PPI ~ treatment + sex + treatment*Prepulse_intensity + Error(animal_id/Prepulse_intensity), data = PPI)
+summary(aov.out.PPI)
+
+```
+
+We don't see any significant differences in percent PPI.
+
+-----
+
+Closed to open sequence for EPM:
+
+```{r}
+
+closed_to_open <- read.csv("closed_to_open_sequence.csv", header = TRUE)
+closed_to_open$treatment <- factor(closed_to_open$treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+
+closed_to_open <- closed_to_open %>%
+  mutate(mean_time_center = (time_in_center_sequence / number_of_sequences)) %>%
+  filter(time_in_center_sequence < 50)
+
+
+closed_to_open %>%
+  ggplot(aes(x = treatment, y = time_in_center_sequence, colour = treatment)) + geom_point(position = "jitter", size = 3) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + ggtitle("Fig. 16 - time spent in center zone\nwhen transitioning from closed to open arms") + scale_colour_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+lm9 <- lm(time_in_center_sequence ~ SEA + stress + Sex + Sex*SEA*stress, data = closed_to_open)
+summary(lm9)
+```
+
+
+-----
+-----
+
+
+Below will be an attempt to run the multilevel models:
+
+```{r echo = FALSE}
+
+SEA.null.distance <- lmer(distance ~ sex + stress + (1 + SEA + stress | day) + (1 + SEA + stress | animal_id) + (1 + SEA + stress | maternal_id), data = wram_hidden, REML = FALSE)
+
+SEA.test.distance <- lmer(distance ~ SEA + sex + stress + (1 + SEA + stress | day) + (1 + SEA + stress | animal_id) + (1 + SEA +stress | maternal_id), data = wram_hidden, REML = FALSE)
+
+anova(SEA.null.distance, SEA.test.distance)
+
+coef(SEA.test.distance)
+
+summary(SEA.test.distance)
+
+######
+
+SEA.null.duration <- lmer(duration ~ sex + (1 + SEA | day) + (1 + SEA | animal_id) + (1 + SEA | maternal_id), data = wram_hidden, REML = FALSE)
+
+SEA.test.duration <- lmer(duration ~ SEA + sex + (1 + SEA | day) + (1 + SEA | animal_id) + (1 + SEA | maternal_id), data = wram_hidden, REML = FALSE)
+
+anova(SEA.null.duration, SEA.test.duration)
+
+coef(SEA.test.duration)
+
+summary(SEA.test.duration)
+
+######
+
+stress.null.duration <- lmer(duration ~ sex + (1 + stress | day) + (1 + stress | animal_id), data = wram_hidden, REML = FALSE)
+
+stress.test.duration <- lmer(duration ~ sex + stress + (1 + stress | day) + (1 + stress |animal_id), data = wram_hidden, REML = FALSE)
+
+anova(stress.null.duration, stress.test.duration)
+
+coef(stress.test.duration)
+
+summary(stress.test.duration)
+
+#####
+
+interaction.null.duration <- lmer(duration ~ sex + SEA + stress + (1 + stress*SEA | day) + (1 + stress*SEA | animal_id), data = wram_hidden, REML = FALSE)
+
+interaction.test.duration <- lmer(duration ~ sex + stress*SEA + (1 + stress*SEA | day) + (1 + stress*SEA |animal_id), data = wram_hidden, REML = FALSE)
+
+anova(interaction.null.duration, interaction.test.duration)
+
+coef(interaction.test.duration)
+
+summary(interaction.test.duration)
+
+
+```

@@ -6,6 +6,7 @@ output: html_document
 ---
 
 ```{r echo = FALSE}
+
 options(warn = -1)
 #install.packages("car")
 #install.packages("dplyr")
@@ -32,10 +33,12 @@ library(MASS)
 library(QuantPsyc)
 library(nlme)
 library(lme4)
+#loads in all packages used in this analysis.  Find install code above.
 
 Sem <- function(x) {
   sqrt(var(x)/length(x))
   }
+#creates function to calculate the standard error of the mean, SEM
 
 ```
 
@@ -55,40 +58,45 @@ consumption <- read.csv("consumption.csv", header = TRUE, na.strings = c("", "NA
 
 consumption <- consumption %>% 
   na.omit()
+#remove missing points from the consumption data
 
 consumption$Consumption <- as.numeric(as.character(consumption$Consumption))
+#convert characters to numbers
 
 consumption$Treatment <- factor(consumption$Treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+#converts treatments to factors
 
 animal_weight_outlier$treatment <- factor(animal_weight_outlier$treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
-
-
+#converts treatments to factors
 
 animal_weight_outlier_male <- animal_weight_outlier %>%
   filter(Sex == "m") 
-#males only
+#animal weight data for males only
 
 animal_weight_outlier_female <- animal_weight_outlier %>%
   filter(Sex == "f")
-#females only
+#animal weight data for females only
 
 animal_weight_outlier_male14 <- animal_weight_outlier %>%
   filter(Sex == "m") %>%
   filter(day == 14)
-#males on day 15 only
+#animal weight data for males on day 15 only
 
 animal_weight_outlier_female14 <- animal_weight_outlier %>%
   filter(Sex == "f") %>%
   filter(day == 14)
-#females on day 15 only
+#animal weight data for females on day 15 only
 
 AW_14_outlier <- animal_weight_outlier %>%
   filter(day == 14)
+#total animal weights on day 15 only
 
 AW_14_outlier$treatment <- factor(AW_14_outlier$treatment, levels = c("Saline_No_Stress", "SEA_No_Stress", "Saline_Stress", "SEA_Stress"))
+#convert treatments to factors
 
 ```
 
+-----
 -----
 
 Let's look at body weight before starting the stress protocol.
@@ -99,18 +107,22 @@ AW_0 <- animal_weight_outlier %>%
   filter(day == 0) %>%
   group_by(treatment) %>%
   mutate(Sem_weight = Sem(weight))
+#creates animal weight data frame on day zero, grouped by treatment, and calculates the SEM
 
 AW_0_average_weight_distinct <- AW_0 %>%
   group_by(treatment, Sex) %>%
   mutate(average_weight = mean(weight), Sem_weight = Sem(weight)) %>%
   distinct(treatment, Sex)
+#creates animal weight data frame over time, with computed average weight and SEM for each treatment. Day 0.
 
 AW_0 %>%
   ggplot(aes(x = treatment, y = weight, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + ggtitle("Fig. 1 - Body weight on day 0 of stress protocol") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_grid(. ~ Sex)
-
+#draws figure of body weight on day zero of stress protocol by treatment, faceted by sex of animal.  Individual data points with treatment mean indicated by horizontal line.
 
 AW_0_average_weight_distinct %>%
   ggplot(aes(x = treatment, y = average_weight, fill = treatment)) + geom_bar(stat = "identity") + geom_errorbar(aes(ymin = average_weight - Sem_weight, ymax = average_weight + Sem_weight), width = 0.2) + ggtitle("Fig. 1 - Animal weight on Day 0 of stress protocol") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_fill_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_grid(. ~ Sex)
+#draws figure of body weight on day zero of stress protocol by treatment, faceted by sex of animal.  Histograms of treatment means with SEM indicated by bars.
+
 ```
 
 ```{r echo = FALSE}
@@ -118,11 +130,14 @@ AW_0_average_weight_distinct %>%
 lm1 <- lm(weight ~ treatment + Sex, data = AW_0)
 summary(lm1)
 anova(lm1)
+#linear regression of weight regressed on treatment and sex, with both linear model summary and ANOVA output summary.  Treatment is treated as a factor in this analysis (4 factors, each an individual treatment)
+
 ```
 
 What the above analysis means:
 Male animals weigh significantly more than females on day 0 of the stress protocol, but maternal SEA treatment has not affected weight.
 
+-----
 -----
 
 Now let's look at day 15, after the stressor.
@@ -133,9 +148,11 @@ AW_14_average_weight_distinct <- AW_14_outlier %>%
   group_by(treatment, Sex) %>%
   mutate(average_weight = mean(weight), Sem_weight = Sem(weight)) %>%
   distinct(treatment, Sex)
+#creates animal weight data frame over time, with computed average weight and SEM for each treatment. Day 15.
 
 AW_14_outlier %>%
   ggplot(aes(x = treatment, y = weight, colour = treatment)) + geom_jitter(position = position_jitter(width = .1), size = 2) + geom_errorbar(stat = "hline", yintercept = "mean", width = 0.8, aes(ymax = ..y.., ymin = ..y..), size = 1.5) + ggtitle("Fig. 2 - Body weight on day 15 of stress protocol") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_grid(. ~ Sex)
+#draws figure of body weight on day fifteen of stress protocol by treatment, faceted by sex of animal.  Individual data points with treatment mean indicated by horizontal line.
 
 AW_14_average_weight_distinct %>%
   ggplot(aes(x = treatment, y = average_weight, fill = treatment)) + geom_bar(stat = "identity") + geom_errorbar(aes(ymin = average_weight - Sem_weight, ymax = average_weight + Sem_weight), width = 0.2) + ggtitle("Fig. 2 - Body weight on day 15 of stress protocol") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_fill_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_grid(. ~ Sex)

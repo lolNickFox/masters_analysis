@@ -130,7 +130,7 @@ AW_0_average_weight_distinct %>%
 lm1 <- lm(weight ~ treatment + Sex, data = AW_0)
 summary(lm1)
 anova(lm1)
-#linear regression of weight regressed on treatment and sex, with both linear model summary and ANOVA output summary.  Treatment is treated as a factor in this analysis (4 factors, each an individual treatment)
+#linear regression of weight regressed on treatment(0, 1, 2, or 3) and sex (0 or 1), with both linear model summary and ANOVA output summary.  Treatment is treated as a factor in this analysis (4 factors, each an individual treatment)
 
 ```
 
@@ -156,6 +156,8 @@ AW_14_outlier %>%
 
 AW_14_average_weight_distinct %>%
   ggplot(aes(x = treatment, y = average_weight, fill = treatment)) + geom_bar(stat = "identity") + geom_errorbar(aes(ymin = average_weight - Sem_weight, ymax = average_weight + Sem_weight), width = 0.2) + ggtitle("Fig. 2 - Body weight on day 15 of stress protocol") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_fill_brewer(palette = "Set1") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_grid(. ~ Sex)
+#draws figure of body weight on day fifeteen of stress protocol by treatment, faceted by sex of animal.  Histograms of treatment means with SEM indicated by bars.
+
 ```
 
 ```{r echo = FALSE}
@@ -163,14 +165,17 @@ AW_14_average_weight_distinct %>%
 lm2 <- lm(weight ~ SEA + stress + Sex + SEA*stress, data = AW_14_outlier)
 summary(lm2)
 anova(lm2)
+#linear regression of weight regressed on SEA (0 or 1) stress (0 or 1), sex (0 or 1), and the SEA by stress interaction, with both linear model summary and ANOVA output summary.
 
 with(AW_14_outlier, pairwise.t.test(weight, treatment, p.adjust.method = "bonferroni", paired = F))
+#Bonferroni posttest for the ANOVA output summary
+
 ```
 
 What the above analysis means:
 Male animals are heavier than female animals on after the stress protocol.  Maternal SEA treatment has not affected weight.
 
-
+-----
 -----
 
 Now let's look at food consumption:
@@ -181,14 +186,15 @@ consumption_figure <- consumption %>%
   group_by(Treatment, day) %>%
   mutate(average_consumption = mean(Consumption), Sem_consumption = Sem(Consumption)) %>%
   distinct(day)
-
+#creates food consumption data frame, with computed average consumption and SEM for each treatment. 
 
 consumption %>%
   ggplot(aes(x = day, y = Consumption, colour = Treatment)) + geom_point(position = "jitter", alpha = 0.6, size = 2.5) + stat_smooth(method = "lm", size = 2, alpha = 0.4) + ggtitle("Fig. 4 - Food consumption per animal") + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + scale_y_continuous(limits = c(2.5, 8)) + facet_grid(. ~ Sex)
+#draws figure of food consumption by treatment across days, faceted by sex of animal. Data displayed as individual data points, with linear best fit lines + 95% confidence intervals.
 
 consumption_figure %>%
   ggplot(aes(x = day, y = average_consumption, colour = Treatment)) + geom_line(size = 2.5) + theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) + scale_colour_brewer(palette = "Set1") + scale_y_continuous(limits = c(2.5, 6)) + ylab("grams eaten per animal per cage")
-
+#draws figure of food consumption by treatment across days.  Data displayed as treatment means.
 
 ```
 
